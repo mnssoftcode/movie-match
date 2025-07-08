@@ -7,6 +7,11 @@ const MOVIES_PER_PAGE = 50;
 let genresExpanded = false;
 const GENRES_PER_PAGE = 20;
 
+// Curated list of popular genres
+const popularGenres = [
+    "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama", "Family", "Fantasy", "Horror", "Mystery", "Romance", "Science Fiction", "Thriller", "War", "Western"
+];
+
 // ===== MOOD TO GENRE MAPPING =====
 const moodToGenres = {
     happy: ["Comedy", "Feel-good", "Adventure", "Family", "Romance"],
@@ -53,28 +58,21 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadMovies() {
     try {
         console.log('Loading movies dataset...');
-        
         const response = await fetch('movies_combined.json');
         if (!response.ok) {
             throw new Error(`Failed to load movies: ${response.status}`);
         }
-        
         movies = await response.json();
         console.log(`Loaded ${movies.length} movies successfully`);
-        
-        // Extract unique genres
+        // Only show popular genres that exist in the dataset
         const allGenres = new Set();
         movies.forEach(movie => {
             if (movie.tags && Array.isArray(movie.tags)) {
                 movie.tags.forEach(tag => allGenres.add(tag));
             }
         });
-        
-        const availableGenres = Array.from(allGenres).sort();
-        console.log(`Found ${availableGenres.length} unique genres`);
-        
+        const availableGenres = popularGenres.filter(g => allGenres.has(g));
         renderGenres(availableGenres);
-        
     } catch (error) {
         console.error('Error loading movies:', error);
         loadSampleMovies();
@@ -103,9 +101,15 @@ function loadSampleMovies() {
             poster: "https://image.tmdb.org/t/p/original/74xTEgt7R36Fpooo50r9T25onhq.jpg"
         }
     ];
-    
-    const sampleGenres = ["Action", "Adventure", "Comedy", "Drama", "Thriller", "Horror", "Romance", "Science Fiction", "Crime", "Mystery"];
-    renderGenres(sampleGenres);
+    // Only show popular genres that exist in the sample
+    const allGenres = new Set();
+    movies.forEach(movie => {
+        if (movie.tags && Array.isArray(movie.tags)) {
+            movie.tags.forEach(tag => allGenres.add(tag));
+        }
+    });
+    const availableGenres = popularGenres.filter(g => allGenres.has(g));
+    renderGenres(availableGenres);
 }
 
 // ===== GENRE RENDERING =====
@@ -178,20 +182,30 @@ function setupEventListeners() {
 }
 
 // ===== SEARCH FUNCTIONS =====
+function setButtonLoading(btn, loading) {
+    if (loading) {
+        btn.disabled = true;
+        btn.classList.add('btn-loading');
+        btn._originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="btn-spinner"></span>Loading...';
+    } else {
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        if (btn._originalText) btn.innerHTML = btn._originalText;
+    }
+}
+
 function getMoodRecommendations() {
     const moodText = elements.moodInput.value.trim();
-    
     if (!moodText) {
         alert('Please describe your mood to get AI recommendations!');
         return;
     }
-    
-    showLoading();
-    
+    setButtonLoading(elements.getMoodRecommendations, true);
     setTimeout(() => {
         const recommendedGenres = analyzeMood(moodText);
         filterMoviesByGenres(recommendedGenres);
-        hideLoading();
+        setButtonLoading(elements.getMoodRecommendations, false);
         showResults(`Found ${filteredMovies.length} movies perfect for your mood: "${moodText}"`);
     }, 1500);
 }
@@ -201,43 +215,36 @@ function getGenreRecommendations() {
         alert('Please select at least one genre to get recommendations!');
         return;
     }
-    
-    showLoading();
-    
+    setButtonLoading(elements.getGenreRecommendations, true);
     setTimeout(() => {
         filterMoviesByGenres(selectedGenres);
-        hideLoading();
+        setButtonLoading(elements.getGenreRecommendations, false);
         showResults(`Found ${filteredMovies.length} movies based on your selected genres`);
     }, 1000);
 }
 
 function showAllMovies() {
-    showLoading();
-    
+    setButtonLoading(elements.showAllMovies, true);
     setTimeout(() => {
         filteredMovies = [...movies].sort((a, b) => b.rating - a.rating);
-        hideLoading();
+        setButtonLoading(elements.showAllMovies, false);
         showResults(`Showing all ${filteredMovies.length} movies (sorted by rating)`);
     }, 500);
 }
 
 function searchMoviesByName() {
     const searchTerm = elements.movieNameSearch.value.trim();
-    
     if (!searchTerm) {
         alert('Please enter a movie name to search!');
         return;
     }
-    
-    showLoading();
-    
+    setButtonLoading(elements.searchByName, true);
     setTimeout(() => {
         const searchLower = searchTerm.toLowerCase();
         filteredMovies = movies.filter(movie => 
             movie.title.toLowerCase().includes(searchLower)
         ).sort((a, b) => b.rating - a.rating);
-        
-        hideLoading();
+        setButtonLoading(elements.searchByName, false);
         showResults(`Found ${filteredMovies.length} movies matching "${searchTerm}"`);
     }, 500);
 }
@@ -311,14 +318,6 @@ function clearAllGenres() {
     });
 }
 
-function showLoading() {
-    elements.loadingOverlay.style.display = 'flex';
-}
-
-function hideLoading() {
-    elements.loadingOverlay.style.display = 'none';
-}
-
 function showResults(countText) {
     elements.resultsSection.style.display = 'block';
     elements.resultsCount.textContent = countText;
@@ -355,9 +354,7 @@ function renderMovies() {
     if (endIdx < filteredMovies.length) {
         const loadMoreBtn = document.createElement('button');
         loadMoreBtn.textContent = 'Load More';
-        loadMoreBtn.className = 'btn btn-primary';
-        loadMoreBtn.style.display = 'block';
-        loadMoreBtn.style.margin = '30px auto 0 auto';
+        loadMoreBtn.className = 'load-more-btn';
         loadMoreBtn.onclick = () => {
             currentPage++;
             renderMovies();
