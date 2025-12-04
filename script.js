@@ -32,7 +32,7 @@ async function getGenresFromAI(moodText) {
         // Use Render backend URL in production, localhost in development
         const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://127.0.0.1:8000' 
-            : 'https://your-render-backend-url.onrender.com'; // TODO: Update with your actual Render backend URL
+            : 'YOUR_RENDER_BACKEND_URL'; // TODO: Update with your actual Render backend URL
         
         const response = await fetch(`${backendUrl}/predict`, {
             method: "POST",
