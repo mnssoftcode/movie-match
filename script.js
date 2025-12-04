@@ -26,6 +26,33 @@ const moodToGenres = {
     inspired: ["Drama", "Biography", "Adventure", "Epic", "Historical"]
 };
 
+// ===== AI INTEGRATION =====
+async function getGenresFromAI(moodText) {
+    try {
+        // Use Render backend URL in production, localhost in development
+        const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://127.0.0.1:8000' 
+            : 'https://your-render-backend-url.onrender.com'; // TODO: Update with your actual Render backend URL
+        
+        const response = await fetch(`${backendUrl}/predict`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ text: moodText })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`AI service error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data.genres.map(item => item[0]); // return just genre names
+    } catch (error) {
+        console.error("AI prediction failed:", error);
+        // Fallback to rule-based approach if AI fails
+        return analyzeMood(moodText);
+    }
+}
+
 // ===== DOM ELEMENTS =====
 const elements = {
     moodInput: document.getElementById('moodInput'),
@@ -195,19 +222,25 @@ function setButtonLoading(btn, loading) {
     }
 }
 
-function getMoodRecommendations() {
+async function getMoodRecommendations() {
     const moodText = elements.moodInput.value.trim();
     if (!moodText) {
         alert('Please describe your mood to get AI recommendations!');
         return;
     }
     setButtonLoading(elements.getMoodRecommendations, true);
-    setTimeout(() => {
-        const recommendedGenres = analyzeMood(moodText);
+    
+    try {
+        // Use AI to predict genres based on mood
+        const recommendedGenres = await getGenresFromAI(moodText);
         filterMoviesByGenres(recommendedGenres);
         setButtonLoading(elements.getMoodRecommendations, false);
         showResults(`Found ${filteredMovies.length} movies perfect for your mood: "${moodText}"`);
-    }, 1500);
+    } catch (error) {
+        console.error("Error getting mood recommendations:", error);
+        setButtonLoading(elements.getMoodRecommendations, false);
+        alert("Failed to get AI recommendations. Please try again.");
+    }
 }
 
 function getGenreRecommendations() {

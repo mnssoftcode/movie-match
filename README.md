@@ -28,6 +28,11 @@ A modern, responsive movie recommendation website built with HTML, CSS, and Java
 - **Keyboard Support**: Close modals with Escape key
 - **Smooth Scrolling**: Automatic scroll to results after selection
 
+### 🤖 AI-Powered Mood Analysis
+- **Natural Language Processing**: Describe your mood in plain English
+- **Intelligent Genre Prediction**: AI model predicts the best genres for your mood
+- **Fallback System**: Rule-based system if AI is unavailable
+
 ## How to Use
 
 1. **Open the Website**: Open `index.html` in your web browser
@@ -66,7 +71,12 @@ movies-recommendation/
 ├── index.html          # Main HTML structure
 ├── styles.css          # CSS styling and animations
 ├── script.js           # JavaScript functionality
-└── README.md           # This file
+├── README.md           # This file
+├── backend/            # AI Backend
+│   ├── server.py       # FastAPI server
+│   ├── requirements.txt # Python dependencies
+│   └── tag2idx.json    # Genre mapping
+└── render.yaml         # Render deployment config
 ```
 
 ### Technologies Used
@@ -75,6 +85,8 @@ movies-recommendation/
 - **JavaScript (ES6+)**: Interactive functionality and data management
 - **Font Awesome**: Icons for enhanced UI
 - **Google Fonts**: Inter font family for modern typography
+- **FastAPI**: Backend framework for AI model serving
+- **PyTorch/Transformers**: AI model for mood analysis
 
 ### Browser Compatibility
 - Chrome (recommended)
@@ -82,6 +94,65 @@ movies-recommendation/
 - Safari
 - Edge
 - Mobile browsers
+
+## Deployment
+
+### Deploying to Render
+
+1. **Create a GitHub Repository**
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git branch -M main
+   git remote add origin https://github.com/yourusername/moviematch.git
+   git push -u origin main
+   ```
+
+2. **Deploy Backend to Render**
+   - Go to [Render Dashboard](https://dashboard.render.com/)
+   - Click "New+" and select "Web Service"
+   - Connect your GitHub repository
+   - Set:
+     - Name: `moviematch-backend`
+     - Root Directory: `backend`
+     - Runtime: `Python 3`
+     - Build Command: `pip install -r requirements.txt`
+     - Start Command: `uvicorn server:app --host 0.0.0.0 --port $PORT`
+   - Click "Create Web Service"
+
+3. **Deploy Frontend to Render**
+   - Go to [Render Dashboard](https://dashboard.render.com/)
+   - Click "New+" and select "Static Site"
+   - Connect your GitHub repository
+   - Set:
+     - Name: `moviematch-frontend`
+     - Build Command: `echo "Frontend build complete"`
+     - Publish Directory: `.`
+   - Add environment variable:
+     - Key: `RENDER_BUILD_COMMAND`
+     - Value: `echo "No build required for static site"`
+   - Click "Create Static Site"
+
+4. **Update Frontend with Backend URL**
+   - After your backend is deployed, copy the backend URL from Render
+   - Update the `backendUrl` in `script.js` with your actual Render backend URL
+   - Commit and push the changes
+
+## Local Development
+
+### Running the Backend
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn server:app --reload
+```
+
+### Running the Frontend
+Simply open `index.html` in your browser, or run a local server:
+```bash
+python3 -m http.server 8000
+```
 
 ## Customization
 
@@ -174,4 +245,4 @@ No server setup required - this is a pure frontend application that runs entirel
 
 ---
 
-**Enjoy discovering your next favorite movie! 🎬✨** # movie-match
+**Enjoy discovering your next favorite movie! 🎬✨**
